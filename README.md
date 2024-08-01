@@ -2,6 +2,10 @@
 
 In this project, you will develop, deploy, and interact with a simple collateralized loan contract on the Ethereum blockchain using Solidity. This contract will manage loans backed by Ethereum as collateral, offering hands-on experience with real-world financial smart contracts.
 
+Etherscan Verification
+
+- https://sepolia.etherscan.io/address/0xA4AfB2CDEc5289d78a6c1afe61201F8fF752E503
+
 ## Getting Started
 
 Use the following command to clone the repo:
@@ -54,6 +58,7 @@ Head over to `test` folder and create a new file to write the tests.
 
 ### 3. Etherscan Verification
 
+- https://sepolia.etherscan.io/address/0xA4AfB2CDEc5289d78a6c1afe61201F8fF752E503
 - Provide a link to the Sepolia Etherscan page confirming the successful deployment of your contract.
 - The Etherscan link should display the contract address and transaction details on the Sepolia testnet.
 

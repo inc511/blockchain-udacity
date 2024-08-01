@@ -1,6 +1,6 @@
 const { HardhatUserConfig } = require("hardhat/config");
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv/config");
+require("dotenv").config();
 
 const config = {
   solidity: {
@@ -15,7 +15,7 @@ const config = {
   networks: {
     "sepolia-testnet": {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.ACCOUNT_PRIVATE_KEY].filter(Boolean),
+      accounts: [process.env.ACCOUNT_PRIVATE_KEY],
     },
   },
 };

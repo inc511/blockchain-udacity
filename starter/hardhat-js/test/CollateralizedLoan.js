@@ -1,52 +1,90 @@
-// Importing necessary modules and functions from Hardhat and Chai for testing
-const {
-  loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-// Describing a test suite for the CollateralizedLoan contract
 describe("CollateralizedLoan", function () {
-  // A fixture to deploy the contract before each test. This helps in reducing code repetition.
   async function deployCollateralizedLoanFixture() {
-    // Deploying the CollateralizedLoan contract and returning necessary variables
-    // TODO: Complete the deployment setup
-    return {};
+    const [deployer, borrower, lender] = await ethers.getSigners();
+    const CollateralizedLoan = await ethers.getContractFactory("CollateralizedLoan");
+    const loanContract = await CollateralizedLoan.deploy();
+    return { loanContract, deployer, borrower, lender };
   }
 
-  // Test suite for the loan request functionality
   describe("Loan Request", function () {
     it("Should let a borrower deposit collateral and request a loan", async function () {
-      // Loading the fixture
-      // TODO: Set up test for depositing collateral and requesting a loan
-      // HINT: Use .connect() to simulate actions from different accounts
+      const { loanContract, borrower } = await loadFixture(deployCollateralizedLoanFixture);
+
+      const collateralAmount = ethers.parseEther("1");
+      const interestRate = 5; // 5%
+      const duration = 3600; // 1 hour
+
+      const tx = await loanContract.connect(borrower).depositCollateralAndRequestLoan(interestRate, duration, { value: collateralAmount });
+      const receipt = await tx.wait();
+      const block = await ethers.provider.getBlock(receipt.blockNumber);
+
+      await expect(tx)
+        .to.emit(loanContract, "LoanRequested")
+        .withArgs(0, borrower.address, collateralAmount, collateralAmount, interestRate, block.timestamp + duration);
     });
   });
 
-  // Test suite for funding a loan
   describe("Funding a Loan", function () {
     it("Allows a lender to fund a requested loan", async function () {
-      // Loading the fixture
-      // TODO: Set up test for a lender funding a loan
-      // HINT: You'll need to check for an event emission to verify the action
+      const { loanContract, borrower, lender } = await loadFixture(deployCollateralizedLoanFixture);
+
+      const collateralAmount = ethers.parseEther("1");
+      const interestRate = 5; // 5%
+      const duration = 3600; // 1 hour
+
+      await loanContract.connect(borrower).depositCollateralAndRequestLoan(interestRate, duration, { value: collateralAmount });
+
+      await expect(
+        loanContract.connect(lender).fundLoan(0, { value: collateralAmount })
+      ).to.emit(loanContract, "LoanFunded")
+        .withArgs(0, lender.address);
     });
   });
 
-  // Test suite for repaying a loan
   describe("Repaying a Loan", function () {
     it("Enables the borrower to repay the loan fully", async function () {
-      // Loading the fixture
-      // TODO: Set up test for a borrower repaying the loan
-      // HINT: Consider including the calculation of the repayment amount
+      const { loanContract, borrower, lender } = await loadFixture(deployCollateralizedLoanFixture);
+
+      const collateralAmount = ethers.parseEther("1");
+      const interestRate = BigInt(5); // 5%
+      const duration = 3600; // 1 hour
+      const loanAmount = collateralAmount;
+      const repaymentAmount = loanAmount + loanAmount * interestRate / BigInt(100);
+
+      await loanContract.connect(borrower).depositCollateralAndRequestLoan(interestRate, duration, { value: collateralAmount });
+      await loanContract.connect(lender).fundLoan(0, { value: loanAmount });
+
+      await expect(
+        loanContract.connect(borrower).repayLoan(0, { value: repaymentAmount })
+      ).to.emit(loanContract, "LoanRepaid")
+        .withArgs(0);
     });
   });
 
-  // Test suite for claiming collateral
   describe("Claiming Collateral", function () {
     it("Permits the lender to claim collateral if the loan isn't repaid on time", async function () {
-      // Loading the fixture
-      // TODO: Set up test for claiming collateral
-      // HINT: Simulate the passage of time if necessary
+      const { loanContract, borrower, lender } = await loadFixture(deployCollateralizedLoanFixture);
+
+      const collateralAmount = ethers.parseEther("1");
+      const interestRate = 5; // 5%
+      const duration = 3600; // 1 hour
+      const loanAmount = collateralAmount;
+
+      await loanContract.connect(borrower).depositCollateralAndRequestLoan(interestRate, duration, { value: collateralAmount });
+      await loanContract.connect(lender).fundLoan(0, { value: loanAmount });
+
+      // Simulate the passage of time
+      await ethers.provider.send("evm_increaseTime", [duration + 1]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(
+        loanContract.connect(lender).claimCollateral(0)
+      ).to.emit(loanContract, "CollateralClaimed")
+        .withArgs(0);
     });
   });
 });
